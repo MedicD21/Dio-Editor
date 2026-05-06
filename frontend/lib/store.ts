@@ -42,7 +42,17 @@ export const useAppStore = create<AppState>((set) => ({
   reorderMedia: (from, to) =>
     set((s) => {
       const arr = [...s.mediaFiles];
+      if (
+        from < 0 ||
+        to < 0 ||
+        from >= arr.length ||
+        to >= arr.length ||
+        from === to
+      ) {
+        return { mediaFiles: arr };
+      }
       const [moved] = arr.splice(from, 1);
+      if (!moved) return { mediaFiles: arr };
       arr.splice(to, 0, moved);
       return { mediaFiles: arr };
     }),

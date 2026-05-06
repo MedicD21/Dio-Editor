@@ -24,16 +24,16 @@ export default function ProjectPage({ params }: Props) {
   const { data: project } = useQuery<Project>({
     queryKey: ["project", projectId],
     queryFn: () => getProject(projectId),
-    refetchInterval: (data) =>
-      data && ["complete", "failed"].includes(data.status) ? false : 3000,
+    refetchInterval: (query) =>
+      query.state.data && ["complete", "failed"].includes(query.state.data.status) ? false : 3000,
   });
 
   const { data: job } = useQuery<Job>({
     queryKey: ["job", jobId],
     queryFn: () => getJob(jobId!),
     enabled: !!jobId,
-    refetchInterval: (data) =>
-      data && data.output_url ? false : 2000,
+    refetchInterval: (query) =>
+      query.state.data && query.state.data.output_url ? false : 2000,
   });
 
   const isComplete = project?.status === "complete";

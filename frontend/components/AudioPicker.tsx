@@ -14,6 +14,13 @@ export default function AudioPicker() {
   const [playingId, setPlayingId] = useState<string | null>(null);
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
 
+  React.useEffect(() => {
+    return () => {
+      audioRef.current?.pause();
+      audioRef.current = null;
+    };
+  }, []);
+
   const { data: tracks = [], isLoading } = useQuery({
     queryKey: ["audio", "upbeat"],
     queryFn: () => searchAudio("upbeat"),
