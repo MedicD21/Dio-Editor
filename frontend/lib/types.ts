@@ -1,4 +1,5 @@
 export type Platform = "tiktok" | "reels" | "youtube_shorts" | "twitter" | "linkedin";
+export type ProcessingMode = "fast" | "pro_ai";
 
 export interface MediaFile {
   id: string;

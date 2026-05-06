@@ -7,6 +7,7 @@ import UploadZone from "../components/UploadZone";
 import MediaGrid from "../components/MediaGrid";
 import PromptInput from "../components/PromptInput";
 import PlatformSelector from "../components/PlatformSelector";
+import ProcessingModeSelector from "../components/ProcessingModeSelector";
 import AudioPicker from "../components/AudioPicker";
 import { useAppStore } from "../lib/store";
 import { uploadMedia } from "../lib/api";
@@ -27,7 +28,7 @@ export default function HomePage() {
   const router = useRouter();
   const {
     sessionId, setSessionId,
-    mediaFiles, platform, prompt, audioMode, selectedTrack, clearAll,
+    mediaFiles, platform, processingMode, prompt, audioMode, selectedTrack, clearAll,
   } = useAppStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,6 +51,7 @@ export default function HomePage() {
       const resp = await uploadMedia({
         files: mediaFiles.map((m) => m.file),
         platform,
+        processingMode,
         prompt: prompt || undefined,
         sessionId,
       });
@@ -104,6 +106,10 @@ export default function HomePage() {
 
           <motion.div variants={fadeUp}>
             <PlatformSelector />
+          </motion.div>
+
+          <motion.div variants={fadeUp}>
+            <ProcessingModeSelector />
           </motion.div>
 
           <motion.div variants={fadeUp}>

@@ -1,8 +1,15 @@
 import asyncio
+import sys
+from pathlib import Path
 from celery import Celery
 from config import get_settings
 
 settings = get_settings()
+
+# Ensure worker subprocesses can resolve top-level local modules (services, models, etc.)
+BACKEND_ROOT = Path(__file__).resolve().parent.parent
+if str(BACKEND_ROOT) not in sys.path:
+    sys.path.insert(0, str(BACKEND_ROOT))
 
 celery_app = Celery(
     "dio_editor",
@@ -36,12 +43,13 @@ def render_video_task(
     project_id: str,
     job_id: str,
     override_track_id: str | None = None,
+    processing_mode: str = "fast",
 ):
     from services.pipeline import Pipeline
 
     async def _run():
         pipeline = Pipeline()
-        await pipeline.run(project_id, job_id, override_track_id)
+        await pipeline.run(project_id, job_id, override_track_id, processing_mode)
 
     try:
         loop = asyncio.new_event_loop()

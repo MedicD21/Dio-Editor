@@ -47,7 +47,7 @@ async def _update_step(
     progress: int,
     message: str,
 ) -> None:
-    steps = list(job.steps)
+    steps = [dict(step) for step in (job.steps or [])]
     for step in steps:
         if step["name"] == step_name:
             step["status"] = status
@@ -89,6 +89,7 @@ class Pipeline:
         project_id: str,
         job_id: str,
         override_track_id: Optional[str] = None,
+        processing_mode: str = "fast",
     ) -> None:
         start_time = time.time()
         temp_dir = Path(f"/tmp/dio/{project_id}")
@@ -104,14 +105,14 @@ class Pipeline:
 
             try:
                 await self._run_pipeline(
-                    session, job, project, temp_dir, override_track_id, start_time
+                    session, job, project, temp_dir, override_track_id, start_time, processing_mode
                 )
             except Exception as exc:
                 for step in job.steps:
                     if step["status"] == "active":
                         step["status"] = "failed"
                         step["message"] = str(exc)[:200]
-                job.steps = list(job.steps)
+                job.steps = [dict(step) for step in (job.steps or [])]
                 job.error_message = str(exc)[:500]
                 session.add(job)
                 project.status = "failed"
@@ -132,6 +133,7 @@ class Pipeline:
         temp_dir: Path,
         override_track_id: Optional[str],
         start_time: float,
+        processing_mode: str,
     ) -> None:
         platform = project.platform
         specs = PLATFORM_SPECS.get(platform, PLATFORM_SPECS["tiktok"])
@@ -172,49 +174,83 @@ class Pipeline:
 
         await _update_step(session, job, "Downloading assets", "complete", 100, f"Downloaded {len(asset_files)} assets")
 
-        # Step 2: Analyze media
-        await _update_step(session, job, "Analyzing media", "active", 0, "Running Claude vision analysis...")
-        await _update_project_status(session, project, "analyzing")
+        is_fast_mode = processing_mode == "fast"
+        analyses: list[dict] = []
 
-        frames_dir = temp_dir / "frames"
-        frames_dir.mkdir(exist_ok=True)
-
-        analysis_inputs: list[dict] = []
-        for af in asset_files:
-            frame_path = str(frames_dir / f"{af['asset_id']}_frame.jpg")
-            if af["is_video"]:
-                try:
-                    duration = await self.ffmpeg.get_video_duration(af["local_path"])
-                    await self.ffmpeg.extract_frame(af["local_path"], frame_path, 1.0)
-                except Exception:
-                    duration = 5.0
-                    shutil.copy(af["local_path"], frame_path) if af["local_path"].endswith((".jpg", ".jpeg", ".png")) else None
-            else:
-                shutil.copy(af["local_path"], frame_path)
+        if is_fast_mode:
+            await _update_step(session, job, "Analyzing media", "active", 0, "Fast mode: skipping deep AI analysis...")
+            for af in asset_files:
                 duration = None
-
-            if os.path.exists(frame_path):
-                analysis_inputs.append({
+                if af["is_video"]:
+                    try:
+                        duration = await self.ffmpeg.get_video_duration(af["local_path"])
+                    except Exception:
+                        duration = 5.0
+                analyses.append({
                     "asset_id": af["asset_id"],
-                    "frame_path": frame_path,
-                    "is_video": af["is_video"],
-                    "duration": duration,
-                    "local_path": af["local_path"],
+                    "type": "video" if af["is_video"] else "photo",
+                    "duration_seconds": duration,
+                    "subjects": [],
+                    "mood": "upbeat",
+                    "energy_level": 6,
+                    "color_palette": ["neutral"],
+                    "lighting": "bright",
+                    "motion_level": 6 if af["is_video"] else 3,
+                    "suggested_duration": 2.5 if af["is_video"] else 2.0,
+                    "quality_score": 7,
+                    "tags": ["fast-mode"],
                 })
+            await _update_step(session, job, "Analyzing media", "complete", 100, f"Fast mode profile generated for {len(analyses)} assets")
 
-        analyses = await self.ai.analyze_assets(analysis_inputs)
-        await _update_step(session, job, "Analyzing media", "complete", 100, f"Analyzed {len(analyses)} assets")
+            await _update_step(session, job, "Planning edit", "active", 0, "Fast mode: creating quick-cut plan...")
+            await _update_project_status(session, project, "planning")
+            plan = self.planner._fallback_plan(analyses, specs, platform)
+            plan["title"] = "Fast Draft"
+            await _update_step(session, job, "Planning edit", "complete", 100, "Fast mode plan ready")
+        else:
+            # Step 2: Analyze media
+            await _update_step(session, job, "Analyzing media", "active", 0, "Running Claude vision analysis...")
+            await _update_project_status(session, project, "analyzing")
 
-        # Step 3: Plan edit
-        await _update_step(session, job, "Planning edit", "active", 0, "Creating editorial plan with Claude...")
-        await _update_project_status(session, project, "planning")
+            frames_dir = temp_dir / "frames"
+            frames_dir.mkdir(exist_ok=True)
 
-        plan = await self.planner.create_plan(
-            platform=platform,
-            user_prompt=project.user_prompt or "",
-            asset_analyses=analyses,
-        )
-        await _update_step(session, job, "Planning edit", "complete", 100, f"Plan created: {plan.get('title', 'Untitled')}")
+            analysis_inputs: list[dict] = []
+            for af in asset_files:
+                frame_path = str(frames_dir / f"{af['asset_id']}_frame.jpg")
+                if af["is_video"]:
+                    try:
+                        duration = await self.ffmpeg.get_video_duration(af["local_path"])
+                        await self.ffmpeg.extract_frame(af["local_path"], frame_path, 1.0)
+                    except Exception:
+                        duration = 5.0
+                        shutil.copy(af["local_path"], frame_path) if af["local_path"].endswith((".jpg", ".jpeg", ".png")) else None
+                else:
+                    shutil.copy(af["local_path"], frame_path)
+                    duration = None
+
+                if os.path.exists(frame_path):
+                    analysis_inputs.append({
+                        "asset_id": af["asset_id"],
+                        "frame_path": frame_path,
+                        "is_video": af["is_video"],
+                        "duration": duration,
+                        "local_path": af["local_path"],
+                    })
+
+            analyses = await self.ai.analyze_assets(analysis_inputs)
+            await _update_step(session, job, "Analyzing media", "complete", 100, f"Analyzed {len(analyses)} assets")
+
+            # Step 3: Plan edit
+            await _update_step(session, job, "Planning edit", "active", 0, "Creating editorial plan with Claude...")
+            await _update_project_status(session, project, "planning")
+
+            plan = await self.planner.create_plan(
+                platform=platform,
+                user_prompt=project.user_prompt or "",
+                asset_analyses=analyses,
+            )
+            await _update_step(session, job, "Planning edit", "complete", 100, f"Plan created: {plan.get('title', 'Untitled')}")
 
         # Step 4: Select audio
         await _update_step(session, job, "Selecting audio", "active", 0, "Searching for matching audio track...")

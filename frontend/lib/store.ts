@@ -1,10 +1,11 @@
 import { create } from "zustand";
-import { MediaFile, Platform, AudioTrack } from "./types";
+import { MediaFile, Platform, AudioTrack, ProcessingMode } from "./types";
 
 interface AppState {
   sessionId: string;
   mediaFiles: MediaFile[];
   platform: Platform;
+  processingMode: ProcessingMode;
   prompt: string;
   audioMode: "auto" | "pick";
   selectedTrack: AudioTrack | null;
@@ -13,6 +14,7 @@ interface AppState {
   removeMediaFile: (id: string) => void;
   reorderMedia: (from: number, to: number) => void;
   setPlatform: (p: Platform) => void;
+  setProcessingMode: (m: ProcessingMode) => void;
   setPrompt: (s: string) => void;
   setAudioMode: (m: "auto" | "pick") => void;
   setSelectedTrack: (t: AudioTrack | null) => void;
@@ -23,6 +25,7 @@ export const useAppStore = create<AppState>((set) => ({
   sessionId: "",
   mediaFiles: [],
   platform: "tiktok",
+  processingMode: "fast",
   prompt: "",
   audioMode: "auto",
   selectedTrack: null,
@@ -57,12 +60,14 @@ export const useAppStore = create<AppState>((set) => ({
       return { mediaFiles: arr };
     }),
   setPlatform: (p) => set({ platform: p }),
+  setProcessingMode: (processingMode) => set({ processingMode }),
   setPrompt: (prompt) => set({ prompt }),
   setAudioMode: (audioMode) => set({ audioMode }),
   setSelectedTrack: (selectedTrack) => set({ selectedTrack }),
   clearAll: () =>
     set({
       mediaFiles: [],
+      processingMode: "fast",
       prompt: "",
       audioMode: "auto",
       selectedTrack: null,

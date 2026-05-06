@@ -47,6 +47,9 @@ services:
       - "8000:8000"
     env_file:
       - .env
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://dio:dio@postgres:5432/dio_editor
+      - PYTHONPATH=/app
     volumes:
       - ./backend:/app
       - temp_media:/tmp/dio
@@ -65,6 +68,9 @@ services:
       dockerfile: Dockerfile
     env_file:
       - .env
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://dio:dio@postgres:5432/dio_editor
+      - PYTHONPATH=/app
     volumes:
       - ./backend:/app
       - temp_media:/tmp/dio

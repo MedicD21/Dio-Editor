@@ -1,5 +1,5 @@
 import axios from "axios";
-import { Job, Project, AudioTrack, UploadResponse, Platform } from "./types";
+import { Job, Project, AudioTrack, UploadResponse, Platform, ProcessingMode } from "./types";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -8,12 +8,14 @@ const api = axios.create({ baseURL: BASE });
 export async function uploadMedia(params: {
   files: File[];
   platform: Platform;
+  processingMode: ProcessingMode;
   prompt?: string;
   sessionId?: string;
 }): Promise<UploadResponse> {
   const form = new FormData();
   params.files.forEach((f) => form.append("files", f));
   form.append("platform", params.platform);
+  form.append("processing_mode", params.processingMode);
   if (params.prompt) form.append("prompt", params.prompt);
   if (params.sessionId) form.append("session_id", params.sessionId);
 

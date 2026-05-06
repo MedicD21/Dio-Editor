@@ -65,12 +65,15 @@ async def _convert_heic_to_jpeg(src: str, dst: str) -> None:
 async def upload_media(
     files: list[UploadFile] = File(...),
     platform: str = Form(...),
+    processing_mode: str = Form("fast"),
     prompt: Optional[str] = Form(None),
     session_id: Optional[str] = Form(None),
     db: AsyncSession = Depends(get_db),
 ):
     if platform not in PLATFORM_SPECS:
         raise HTTPException(status_code=400, detail=f"Invalid platform: {platform}")
+    if processing_mode not in {"fast", "pro_ai"}:
+        raise HTTPException(status_code=400, detail=f"Invalid processing_mode: {processing_mode}")
     if len(files) > settings.max_upload_files:
         raise HTTPException(status_code=400, detail=f"Max {settings.max_upload_files} files allowed")
 
@@ -156,7 +159,7 @@ async def upload_media(
     await db.commit()
 
     from tasks.render_task import render_video_task
-    render_video_task.delay(project_id_str, str(job.id))
+    render_video_task.delay(project_id_str, str(job.id), None, processing_mode)
 
     return UploadResponse(
         project_id=project.id,

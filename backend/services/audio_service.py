@@ -2,6 +2,7 @@ import asyncio
 import os
 import uuid
 from typing import Optional
+import subprocess
 import httpx
 from pydantic import BaseModel
 
@@ -93,6 +94,39 @@ class AudioTrack(BaseModel):
 
 
 class AudioService:
+    async def _download_to_path(self, url: str, output_path: str) -> bool:
+        try:
+            async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
+                resp = await client.get(url)
+                resp.raise_for_status()
+                with open(output_path, "wb") as f:
+                    f.write(resp.content)
+            return True
+        except Exception:
+            return False
+
+    async def _generate_silent_track(self, output_path: str, duration_seconds: int = 60) -> None:
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-f",
+            "lavfi",
+            "-i",
+            f"anullsrc=r=44100:cl=stereo",
+            "-t",
+            str(duration_seconds),
+            "-q:a",
+            "9",
+            "-acodec",
+            "libmp3lame",
+            output_path,
+        ]
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(
+            None,
+            lambda: subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True),
+        )
+
     async def search_pixabay_music(
         self, mood: str, bpm_range: tuple[int, int]
     ) -> list[AudioTrack]:
@@ -198,24 +232,16 @@ class AudioService:
         return combined[:10]
 
     async def download_track(self, track: AudioTrack, output_path: str) -> str:
-        try:
-            async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
-                resp = await client.get(track.download_url)
-                resp.raise_for_status()
-                with open(output_path, "wb") as f:
-                    f.write(resp.content)
-            return output_path
-        except Exception:
-            local_fallback = next(
-                (t for t in LOCAL_FALLBACK_TRACKS if t["mood"] == track.mood),
-                LOCAL_FALLBACK_TRACKS[0],
-            )
-            async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
-                resp = await client.get(local_fallback["download_url"])
-                resp.raise_for_status()
-                with open(output_path, "wb") as f:
-                    f.write(resp.content)
-            return output_path
+        candidates = [track.download_url] + [t["download_url"] for t in LOCAL_FALLBACK_TRACKS]
+        for url in candidates:
+            if not url:
+                continue
+            ok = await self._download_to_path(url, output_path)
+            if ok:
+                return output_path
+
+        await self._generate_silent_track(output_path, duration_seconds=60)
+        return output_path
 
     def get_best_track_for_mood(self, tracks: list[AudioTrack], bpm_preference: int) -> AudioTrack:
         if not tracks:

@@ -26,7 +26,7 @@ async function getBundle(): Promise<string> {
   if (bundleCache && fs.existsSync(bundleCache)) {
     return bundleCache;
   }
-  const entryPoint = path.join(__dirname, "Root.tsx");
+  const entryPoint = path.join(process.cwd(), "src", "remotion-entry.ts");
   console.log("Bundling Remotion composition...");
   bundleCache = await bundle({
     entryPoint,
