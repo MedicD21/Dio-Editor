@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     s3_public_url: str = ""
 
     database_url: str = ""  # Set in .env — see .env.example for Supabase format
-    redis_url: str = "redis://redis:6379/0"
+    redis_url: str = ""  # Set in .env — see .env.example for Upstash format
 
     pixabay_api_key: str = ""
     freesound_api_key: str = ""
