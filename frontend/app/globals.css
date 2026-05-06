@@ -1,0 +1,103 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: #080808;
+  --bg-surface: #111111;
+  --bg-elevated: #1A1A1A;
+  --bg-border: #2A2A2A;
+  --accent-gold: #E8C547;
+  --accent-blue: #3D7EFF;
+  --text-primary: #F0F0F0;
+  --text-muted: #888888;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  position: relative;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  opacity: 0.03;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.card {
+  background: var(--bg-surface);
+  border: 1px solid var(--bg-border);
+  border-radius: 12px;
+}
+
+.card-elevated {
+  background: var(--bg-elevated);
+  border: 1px solid var(--bg-border);
+  border-radius: 12px;
+}
+
+.gold-border {
+  border: 1px solid var(--accent-gold);
+}
+
+.gold-glow {
+  box-shadow: 0 0 20px rgba(232, 197, 71, 0.15);
+}
+
+.gold-glow-lg {
+  box-shadow: 0 0 40px rgba(232, 197, 71, 0.25);
+}
+
+.btn-gold {
+  background: var(--accent-gold);
+  color: #080808;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.125rem;
+  letter-spacing: 0.08em;
+  border-radius: 12px;
+  padding: 16px 32px;
+  width: 100%;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: none;
+  outline: none;
+}
+
+.btn-gold:hover:not(:disabled) {
+  background: #f0d05a;
+  box-shadow: 0 0 32px rgba(232, 197, 71, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-gold:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-gold:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+input[type="file"] { display: none; }
+
+@media (max-width: 768px) {
+  .btn-gold { font-size: 1rem; padding: 14px 24px; }
+}
