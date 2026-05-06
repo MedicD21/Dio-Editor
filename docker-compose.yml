@@ -5,28 +5,9 @@ networks:
     driver: bridge
 
 volumes:
-  postgres_data:
   temp_media:
 
 services:
-  postgres:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_USER: dio
-      POSTGRES_PASSWORD: dio
-      POSTGRES_DB: dio_editor
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - dio-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U dio -d dio_editor"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
   redis:
     image: redis:7-alpine
     ports:
@@ -51,8 +32,6 @@ services:
       - ./backend:/app
       - temp_media:/tmp/dio
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
     networks:
@@ -69,8 +48,6 @@ services:
       - ./backend:/app
       - temp_media:/tmp/dio
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
     networks:
