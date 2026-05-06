@@ -19,6 +19,9 @@ celery_app.conf.update(
     task_track_started=True,
     worker_prefetch_multiplier=1,
     task_acks_late=True,
+    # Required for Upstash TLS (rediss://)
+    broker_use_ssl={"ssl_cert_reqs": "none"} if settings.redis_url.startswith("rediss://") else None,
+    redis_backend_use_ssl={"ssl_cert_reqs": "none"} if settings.redis_url.startswith("rediss://") else None,
 )
 
 

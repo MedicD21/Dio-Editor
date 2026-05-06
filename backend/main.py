@@ -1,23 +1,12 @@
-import asyncio
-from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from db import create_tables
 from routers import projects, jobs, audio
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    await create_tables()
-    yield
-
 
 app = FastAPI(
     title="Dio Editor API",
     description="AI-powered automatic video editing pipeline",
     version="1.0.0",
-    lifespan=lifespan,
 )
 
 app.add_middleware(
