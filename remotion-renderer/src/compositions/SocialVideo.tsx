@@ -39,7 +39,7 @@ interface AudioDef {
   volume: number;
 }
 
-interface SocialVideoProps {
+export interface SocialVideoProps {
   clips: ClipDef[];
   audio: AudioDef | null;
   totalDurationSeconds: number;

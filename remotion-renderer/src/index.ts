@@ -100,9 +100,9 @@ app.post("/render", async (req, res) => {
       outputLocation: absOutputPath,
       inputProps,
       timeoutInMilliseconds: timeoutMs,
-      onProgress: ({ renderedFrames, totalFrames }) => {
-        if (totalFrames > 0 && renderedFrames % Math.max(1, Math.floor(totalFrames / 10)) === 0) {
-          console.log(`Rendering: ${renderedFrames}/${totalFrames} frames`);
+      onProgress: (progress) => {
+        if (progress.renderedFrames % 30 === 0) {
+          console.log(`Rendering: ${progress.renderedFrames} frames`);
         }
       },
     });

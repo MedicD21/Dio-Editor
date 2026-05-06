@@ -6,8 +6,27 @@ networks:
 
 volumes:
   temp_media:
+  postgres_data:
 
 services:
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=dio_editor
+      - POSTGRES_USER=dio
+      - POSTGRES_PASSWORD=dio
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - dio-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dio -d dio_editor"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
   redis:
     image: redis:7-alpine
     ports:
@@ -34,6 +53,8 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+      postgres:
+        condition: service_healthy
     networks:
       - dio-network
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
@@ -49,6 +70,8 @@ services:
       - temp_media:/tmp/dio
     depends_on:
       redis:
+        condition: service_healthy
+      postgres:
         condition: service_healthy
     networks:
       - dio-network

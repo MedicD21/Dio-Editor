@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from routers import projects, jobs, audio
+from db import Base, engine
 
 app = FastAPI(
     title="Dio Editor API",
@@ -20,6 +21,12 @@ app.add_middleware(
 app.include_router(projects.router)
 app.include_router(jobs.router)
 app.include_router(audio.router)
+
+
+@app.on_event("startup")
+async def startup_create_tables():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
 
 @app.get("/health")
